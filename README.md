@@ -31,7 +31,7 @@
 5. **Operating Get Next on the Pend Queue**
    **Decision & Reasoning**: Get Next operates on the PEND queue identically to all other queues, selecting pended tasks based on priority, due date, and explicit assignment. This ensures pended tasks are systematically picked up and reviewed as soon as their follow-up due dates arrive or when provider responses are received, avoiding manual queue searching.
 
-## Dashboards
+## Dashboards - SQL Query Available in metrics.sql
 1. **Tasks completed per user per day**
 2. **SLA Compliance (percentage of tasks completed before due date)**
 3. **Time from queue entry to first review**
