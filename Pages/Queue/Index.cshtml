@@ -1,0 +1,274 @@
+﻿@page
+@model HealthcareClaimsManager.Pages.Queue.IndexModel
+@{
+    ViewData["Title"] = "Reviewer Queue Page";
+}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Left Column: Queue Toolbar & Get Next Table -->
+    <div class="lg:col-span-1 space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+            <h2 class="text-lg font-bold text-gray-800 border-b pb-3">Queue Toolbar</h2>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Select Working Queue:</label>
+                <select id="queueSelect" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5">
+                    @foreach (var q in Model.Queues)
+                    {
+                        <option value="@q.QueueCode">@q.QueueName (@q.QueueCode)</option>
+                    }
+                </select>
+            </div>
+
+            <button onclick="getNextClaim()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition-colors flex items-center justify-center">
+                <i class="fa-solid fa-arrow-right-to-bracket mr-2"></i> Get Next Claim
+            </button>
+        </div>
+
+        <!-- Next Available Claim Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-4">Next Selected Task</h3>
+            <div id="nextTaskContainer" class="hidden">
+                <table class="w-full text-sm text-left text-gray-600 border border-gray-200 rounded-lg overflow-hidden">
+                    <thead class="bg-gray-50 text-xs text-gray-700 uppercase">
+                        <tr>
+                            <th class="px-4 py-2">Claim #</th>
+                            <th class="px-4 py-2">Priority</th>
+                            <th class="px-4 py-2">Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-white border-t">
+                            <td id="nextClaimNumber" class="px-4 py-3 font-mono font-bold text-blue-600"></td>
+                            <td id="nextPriority" class="px-4 py-3"></td>
+                            <td id="nextDueDate" class="px-4 py-3 text-xs"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="noTaskMsg" class="text-sm text-gray-500 text-center py-4">Click "Get Next Claim" to evaluate queue rules.</div>
+        </div>
+    </div>
+
+    <!-- Right Column: Review Claim Actions & Claim Detail View -->
+    <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-bold text-gray-800 border-b pb-3 mb-4">Review Claim Workspace</h2>
+
+            <div id="alertBox" class="hidden p-4 rounded-lg mb-4 text-sm font-medium"></div>
+
+            <!-- Detail View -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-6">
+                <span class="text-xs uppercase text-slate-500 font-bold tracking-wider">Active Claim Number</span>
+                <div id="activeClaimDisplay" class="text-3xl font-mono font-extrabold text-slate-800 mt-1">NO CLAIM SELECTED</div>
+                <div id="activeTaskIdDisplay" class="text-xs font-mono text-slate-400 mt-1">Task ID: -</div>
+            </div>
+
+            <!-- Action Form -->
+            <div class="space-y-6">
+                <!-- 4 Action Buttons -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <button onclick="lockClaim()" id="btnLock" disabled class="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-40 transition-colors">
+                        <i class="fa-solid fa-lock mr-1"></i> Lock Claim
+                    </button>
+                    <button onclick="releaseClaim()" id="btnRelease" disabled class="py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-40 transition-colors">
+                        <i class="fa-solid fa-lock-open mr-1"></i> Release
+                    </button>
+                    <button onclick="forwardClaim()" id="btnForward" disabled class="py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-40 transition-colors">
+                        <i class="fa-solid fa-share mr-1"></i> Forward
+                    </button>
+                    <button onclick="completeReview()" id="btnComplete" disabled class="py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm disabled:opacity-40 transition-colors">
+                        <i class="fa-solid fa-check-circle mr-1"></i> Complete
+                    </button>
+                </div>
+
+                <!-- Forward Target User Select -->
+                <div id="forwardContainer" class="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-2">
+                    <label class="block text-xs font-semibold text-purple-900">Forward To Reviewer:</label>
+                    <select id="forwardUserSelect" class="w-full bg-white border border-purple-300 text-gray-900 text-sm rounded-lg p-2">
+                        @foreach (var user in Model.Reviewers)
+                        {
+                            <option value="@user.Username">@user.DisplayName (@user.Username)</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Review Note -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Review Notes / Decision Comments:</label>
+                    <textarea id="reviewNote" rows="3" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Enter optional notes here..."></textarea>
+                </div>
+
+                <!-- Outcome Radio Options -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Completion Outcome:</label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <label class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100">
+                            <input type="radio" name="outcome" value="Approve" checked class="w-4 h-4 text-blue-600">
+                            <span class="ml-2 text-sm font-medium text-gray-800">Approve</span>
+                        </label>
+                        <label class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100">
+                            <input type="radio" name="outcome" value="PartialDenial" class="w-4 h-4 text-amber-600">
+                            <span class="ml-2 text-sm font-medium text-gray-800">Partial Denial</span>
+                        </label>
+                        <label class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100">
+                            <input type="radio" name="outcome" value="Deny" class="w-4 h-4 text-red-600">
+                            <span class="ml-2 text-sm font-medium text-gray-800">Deny</span>
+                        </label>
+                        <label class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100">
+                            <input type="radio" name="outcome" value="Pend" class="w-4 h-4 text-purple-600">
+                            <span class="ml-2 text-sm font-medium text-gray-800">Pend</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let activeTask = null;
+
+        function showAlert(msg, isError = false) {
+            const box = document.getElementById("alertBox");
+            box.className = `p-4 rounded-lg mb-4 text-sm font-medium ${isError ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}`;
+            box.innerText = msg;
+            box.classList.remove("hidden");
+        }
+
+        function clearAlert() {
+            document.getElementById("alertBox").classList.add("hidden");
+        }
+
+        function getActiveUser() {
+            return localStorage.getItem("X-User-Id") || "ereyes";
+        }
+
+        async function getNextClaim() {
+            clearAlert();
+            const queueCode = document.getElementById("queueSelect").value;
+            const response = await fetch(`/api/queue/get-next?queueCode=${queueCode}`, {
+                headers: { "X-User-Id": getActiveUser() }
+            });
+
+            if (response.ok) {
+                activeTask = await response.json();
+                document.getElementById("nextTaskContainer").classList.remove("hidden");
+                document.getElementById("noTaskMsg").classList.add("hidden");
+
+                document.getElementById("nextClaimNumber").innerText = activeTask.claimNumber;
+                document.getElementById("nextPriority").innerText = `P${activeTask.priority}`;
+                document.getElementById("nextDueDate").innerText = new Date(activeTask.dueDate).toLocaleString();
+
+                document.getElementById("activeClaimDisplay").innerText = activeTask.claimNumber;
+                document.getElementById("activeTaskIdDisplay").innerText = `Task ID: ${activeTask.taskId}`;
+                document.getElementById("reviewNote").value = activeTask.note || "";
+
+                document.getElementById("btnLock").disabled = false;
+                document.getElementById("btnRelease").disabled = true;
+                document.getElementById("btnForward").disabled = true;
+                document.getElementById("btnComplete").disabled = true;
+                showAlert("Next claim retrieved. Click 'Lock Claim' to start review.");
+            } else {
+                const err = await response.json();
+                showAlert(err.message || "No claims found.", true);
+            }
+        }
+
+        async function lockClaim() {
+            if (!activeTask) return;
+            clearAlert();
+
+            const response = await fetch('/api/queue/lock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', "X-User-Id": getActiveUser() },
+                body: JSON.stringify({ taskId: activeTask.taskId })
+            });
+
+            if (response.status === 409) {
+                const err = await response.json();
+                showAlert(`CONCURRENCY CONFLICT (409): ${err.message}`, true);
+            } else if (response.ok) {
+                showAlert("Claim locked successfully. You have lock ownership.");
+                document.getElementById("btnLock").disabled = true;
+                document.getElementById("btnRelease").disabled = false;
+                document.getElementById("btnForward").disabled = false;
+                document.getElementById("btnComplete").disabled = false;
+            } else {
+                showAlert("Failed to lock claim.", true);
+            }
+        }
+
+        async function releaseClaim() {
+            if (!activeTask) return;
+            clearAlert();
+
+            const response = await fetch('/api/queue/release', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', "X-User-Id": getActiveUser() },
+                body: JSON.stringify({ taskId: activeTask.taskId })
+            });
+
+            if (response.ok) {
+                showAlert("Lock released. Claim is back in available queue.");
+                resetWorkspace();
+            } else {
+                showAlert("Error releasing lock.", true);
+            }
+        }
+
+        async function forwardClaim() {
+            if (!activeTask) return;
+            clearAlert();
+
+            const targetUser = document.getElementById("forwardUserSelect").value;
+            const response = await fetch('/api/queue/forward', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', "X-User-Id": getActiveUser() },
+                body: JSON.stringify({ taskId: activeTask.taskId, targetUsername: targetUser })
+            });
+
+            if (response.ok) {
+                showAlert(`Task forwarded to ${targetUser}. Lock released.`);
+                resetWorkspace();
+            } else {
+                showAlert("Error forwarding claim.", true);
+            }
+        }
+
+        async function completeReview() {
+            if (!activeTask) return;
+            clearAlert();
+
+            const outcome = document.querySelector('input[name="outcome"]:checked').value;
+            const note = document.getElementById("reviewNote").value;
+
+            const response = await fetch('/api/queue/complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', "X-User-Id": getActiveUser() },
+                body: JSON.stringify({ taskId: activeTask.taskId, outcome: outcome, note: note })
+            });
+
+            if (response.ok) {
+                showAlert(`Review completed with status: ${outcome}. Task closed.`);
+                resetWorkspace();
+            } else {
+                showAlert("Error completing review.", true);
+            }
+        }
+
+        function resetWorkspace() {
+            activeTask = null;
+            document.getElementById("activeClaimDisplay").innerText = "NO CLAIM SELECTED";
+            document.getElementById("activeTaskIdDisplay").innerText = "Task ID: -";
+            document.getElementById("reviewNote").value = "";
+            document.getElementById("btnLock").disabled = true;
+            document.getElementById("btnRelease").disabled = true;
+            document.getElementById("btnForward").disabled = true;
+            document.getElementById("btnComplete").disabled = true;
+            document.getElementById("nextTaskContainer").classList.add("hidden");
+            document.getElementById("noTaskMsg").classList.remove("hidden");
+        }
+    </script>
+}

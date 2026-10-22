@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Healthcare Claims Queue Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-900">
+    <div class="min-h-screen flex flex-col md:flex-row">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 bg-slate-900 text-white flex-shrink-0">
+            <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-hospital-user text-blue-400 text-2xl"></i>
+                    <span class="font-bold text-lg tracking-wide">ClaimsManager</span>
+                </div>
+            </div>
+
+            <div class="p-4 border-b border-slate-800 bg-slate-800/50">
+                <label class="block text-xs uppercase text-slate-400 font-semibold mb-1">Acting Identity (Header)</label>
+                <select id="userHeaderSelector" onchange="updateHeaderUser(this.value)" class="w-full bg-slate-700 text-white text-sm rounded px-3 py-2 border border-slate-600 focus:outline-none focus:border-blue-400">
+                    <option value="sfranklin">sfranklin (Supervisor)</option>
+                    <option value="ereyes" selected>ereyes (Reviewer)</option>
+                    <option value="jchen">jchen (Reviewer)</option>
+                    <option value="mkowalski">mkowalski (Reviewer)</option>
+                    <option value="apatel">apatel (Reviewer)</option>
+                    <option value="dnguyen">dnguyen (Reviewer)</option>
+                    <option value="lbecker">lbecker (Reviewer)</option>
+                    <option value="tosei">tosei (Reviewer)</option>
+                </select>
+            </div>
+
+            <nav class="mt-4 px-3 space-y-1">
+                <a href="/Queue" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors font-medium">
+                    <i class="fa-solid fa-[#1e293b] fa-list-check w-6 text-blue-400"></i>
+                    Reviewer Queue
+                </a>
+                <a href="/Supervisor" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors font-medium">
+                    <i class="fa-solid fa-user-shield w-6 text-amber-400"></i>
+                    Supervisor Dashboard
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <header class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between shadow-sm">
+                <h1 class="text-xl font-bold text-gray-800">@ViewData["Title"]</h1>
+                <span class="text-xs font-mono bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full font-medium">Header: X-User-Id = <span id="activeUserLabel">ereyes</span></span>
+            </header>
+            <div class="flex-1 overflow-y-auto p-8">
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function updateHeaderUser(val) {
+            localStorage.setItem("X-User-Id", val);
+            document.getElementById("activeUserLabel").innerText = val;
+            window.location.reload();
+        }
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedUser = localStorage.getItem("X-User-Id") || "ereyes";
+            document.getElementById("userHeaderSelector").value = savedUser;
+            document.getElementById("activeUserLabel").innerText = savedUser;
+        });
+    </script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

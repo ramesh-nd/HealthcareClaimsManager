@@ -1,0 +1,112 @@
+﻿@page
+@model HealthcareClaimsManager.Pages.Supervisor.IndexModel
+@{
+    ViewData["Title"] = "Supervisor List View";
+}
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <!-- Filter Controls -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div class="flex items-center space-x-3">
+            <label class="text-sm font-semibold text-gray-700">Filter Queue:</label>
+            <select id="supervisorQueueSelect" onchange="loadSupervisorData(1)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5">
+                <option value="">All Queues</option>
+                @foreach (var q in Model.Queues)
+                {
+                    <option value="@q.QueueCode">@q.QueueName (@q.QueueCode)</option>
+                }
+            </select>
+        </div>
+        <button onclick="loadSupervisorData(1)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition-colors flex items-center">
+            <i class="fa-solid fa-rotate-right mr-2"></i> Refresh Data
+        </button>
+    </div>
+
+    <!-- Data Table -->
+    <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <table class="w-full text-sm text-left text-gray-600">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 border-b">
+                <tr>
+                    <th scope="col" class="px-6 py-3">Claim Number</th>
+                    <th scope="col" class="px-6 py-3">Queue</th>
+                    <th scope="col" class="px-6 py-3">Priority</th>
+                    <th scope="col" class="px-6 py-3">Due Date</th>
+                    <th scope="col" class="px-6 py-3">Assigned To</th>
+                    <th scope="col" class="px-6 py-3">Assigned By</th>
+                    <th scope="col" class="px-6 py-3">Locked By</th>
+                    <th scope="col" class="px-6 py-3">Locked On</th>
+                </tr>
+            </thead>
+            <tbody id="supervisorTableBody" class="divide-y divide-gray-200">
+                <!-- Dynamic Rows -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    <div class="flex items-center justify-between mt-6">
+        <span class="text-sm text-gray-600" id="pageInfo">Showing page 1</span>
+        <div class="inline-flex space-x-2">
+            <button id="prevBtn" onclick="changePage(-1)" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50">Previous</button>
+            <button id="nextBtn" onclick="changePage(1)" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50">Next</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+
+        async function loadSupervisorData(page = 1) {
+            currentPage = page;
+            const queueCode = document.getElementById("supervisorQueueSelect").value;
+            const activeUser = localStorage.getItem("X-User-Id") || "sfranklin";
+
+            const response = await fetch(`/api/supervisor/queue-tasks?queueCode=${queueCode}&page=${page}&pageSize=10`, {
+                headers: { "X-User-Id": activeUser }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                totalPages = result.totalPages;
+                document.getElementById("pageInfo").innerText = `Page ${result.page} of ${result.totalPages || 1} (${result.totalCount} total tasks)`;
+
+                const tbody = document.getElementById("supervisorTableBody");
+                tbody.innerHTML = "";
+
+                if (result.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-500">No open tasks found in queue.</td></tr>`;
+                    return;
+                }
+
+                result.data.forEach(task => {
+                    const row = document.createElement("tr");
+                    row.className = "hover:bg-gray-50 bg-white transition-colors";
+                    row.innerHTML = `
+                        <td class="px-6 py-4 font-mono font-bold text-gray-900">${task.claimNumber}</td>
+                        <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded bg-slate-100 text-slate-800">${task.queueCode}</span></td>
+                        <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-bold rounded ${task.priority === 1 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">P${task.priority}</span></td>
+                        <td class="px-6 py-4">${new Date(task.dueDate).toLocaleString()}</td>
+                        <td class="px-6 py-4">${task.assignedTo || '<span class="text-gray-400">-</span>'}</td>
+                        <td class="px-6 py-4">${task.assignedBy || '<span class="text-gray-400">-</span>'}</td>
+                        <td class="px-6 py-4">${task.lockedBy ? `<span class="px-2 py-1 text-xs font-semibold bg-amber-100 text-amber-800 rounded">${task.lockedBy}</span>` : '<span class="text-gray-400">Unlocked</span>'}</td>
+                        <td class="px-6 py-4 text-xs">${task.lockedOn ? new Date(task.lockedOn).toLocaleTimeString() : '-'}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById("prevBtn").disabled = currentPage <= 1;
+                document.getElementById("nextBtn").disabled = currentPage >= totalPages;
+            }
+        }
+
+        function changePage(delta) {
+            if (currentPage + delta >= 1 && currentPage + delta <= totalPages) {
+                loadSupervisorData(currentPage + delta);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => loadSupervisorData(1));
+    </script>
+}
