@@ -1,0 +1,108 @@
+[
+  {
+    "ContainingType": "HealthcareClaimsManager.Controllers.QueueController",
+    "Method": "CompleteReview",
+    "RelativePath": "api/Queue/complete",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "req",
+        "Type": "HealthcareClaimsManager.Models.CompleteRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "HealthcareClaimsManager.Controllers.QueueController",
+    "Method": "ForwardClaim",
+    "RelativePath": "api/Queue/forward",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "req",
+        "Type": "HealthcareClaimsManager.Models.ForwardRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "HealthcareClaimsManager.Controllers.QueueController",
+    "Method": "GetNextClaim",
+    "RelativePath": "api/Queue/get-next",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "queueCode",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "HealthcareClaimsManager.Controllers.QueueController",
+    "Method": "LockClaim",
+    "RelativePath": "api/Queue/lock",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "req",
+        "Type": "HealthcareClaimsManager.Models.LockRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "HealthcareClaimsManager.Controllers.QueueController",
+    "Method": "ReleaseClaim",
+    "RelativePath": "api/Queue/release",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "req",
+        "Type": "HealthcareClaimsManager.Models.ReleaseRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "HealthcareClaimsManager.Controllers.SupervisorController",
+    "Method": "GetQueueTasks",
+    "RelativePath": "api/Supervisor/queue-tasks",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "queueCode",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "page",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "pageSize",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
